@@ -7,3 +7,6 @@ psycopg2-binary>=2.9
 scikit-learn>=1.2
 numpy
 gunicorn
+django-cors-headers>=3.14
+whitenoise>=6.0
+dj-database-url>=1.0

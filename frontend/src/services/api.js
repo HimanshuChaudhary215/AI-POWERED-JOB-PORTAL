@@ -1,3 +1,4 @@
-import axios from "axios";
-const API = axios.create({ baseURL: "http://localhost:8000" });
-export default API;
+import instance from "./axiosInstance";
+
+// Re-export the configured axios instance (baseURL -> /api and Authorization header)
+export default instance;

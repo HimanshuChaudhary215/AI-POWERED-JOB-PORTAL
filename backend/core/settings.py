@@ -7,18 +7,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",") if os.getenv("ALLOWED_HOSTS") else ["*"]
 
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "corsheaders", "channels",
-    "users", "jobs", "admin_panel", "ai", "websocket",
+    "users", "jobs", "admin_panel", "ai", "real_time",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -49,6 +50,15 @@ DATABASES = {
     }
 }
 
+# Allow an easy SQLite fallback for local development when USE_SQLITE=1
+if os.getenv("USE_SQLITE", "0") == "1":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
@@ -60,7 +70,15 @@ REST_FRAMEWORK = {
     )
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "1") == "1"
+if not CORS_ALLOW_ALL_ORIGINS:
+    cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    CORS_ALLOWED_ORIGINS = [o for o in cors_origins if o]
+
+# Allow configuring CSRF trusted origins (use full scheme + host, e.g. https://example.com)
+csrf_trusted = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if csrf_trusted:
+    CSRF_TRUSTED_ORIGINS = [u for u in csrf_trusted.split(",") if u]
 
 # Simple JWT
 from datetime import timedelta
@@ -82,3 +100,7 @@ CHANNEL_LAYERS = {
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Use WhiteNoise to serve static files in production
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
